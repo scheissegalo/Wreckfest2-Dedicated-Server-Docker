@@ -112,13 +112,27 @@ def _extract_title(data: bytes, key: bytes) -> str | None:
     return title
 
 
-def _scan_event_dirs(game_dir: Path) -> tuple[dict[str, str], dict[str, str]]:
-    """Return (venue titles by trackNN, layout titles by full level id)."""
+_GAMEMODE_RE = re.compile(rb"gamemode/([a-z_]+)")
+
+
+def _scan_event_dirs(
+    game_dir: Path,
+) -> tuple[dict[str, str], dict[str, str], dict[str, str], set[str]]:
+    """Return (venue titles, layout titles, default modes, event level ids).
+
+    The level's intrinsic game mode is stored in its .evse as a
+    ``gamemode/<id>`` reference (e.g. ``gamemode/suiciderace``). Levels without
+    such a reference are normal race levels (empty mode). ``event_levels`` is
+    every level that ships an .evse (i.e. is a playable event), including the
+    mode levels whose title cannot be extracted.
+    """
     venues: dict[str, str] = {}
     layouts: dict[str, str] = {}
+    default_modes: dict[str, str] = {}
+    event_levels: set[str] = set()
     event_root = game_dir / "data" / "property" / "event"
     if not event_root.is_dir():
-        return venues, layouts
+        return venues, layouts, default_modes, event_levels
     for envi in sorted(event_root.glob("track*/*.envi")):
         title = _extract_title(envi.read_bytes(), _KEY_VENUE)
         if not title:
@@ -126,10 +140,15 @@ def _scan_event_dirs(game_dir: Path) -> tuple[dict[str, str], dict[str, str]]:
         if title:
             venues[envi.stem] = title
     for evse in sorted(event_root.glob("track*/*.evse")):
-        title = _extract_title(evse.read_bytes(), _KEY_LAYOUT)
+        data = evse.read_bytes()
+        event_levels.add(evse.stem)
+        title = _extract_title(data, _KEY_LAYOUT)
         if title:
             layouts[evse.stem] = title
-    return venues, layouts
+        m = _GAMEMODE_RE.search(data)
+        if m:
+            default_modes[evse.stem] = m.group(1).decode("ascii")
+    return venues, layouts, default_modes, event_levels
 
 
 def _scan_weathers(game_dir: Path) -> list[dict]:
@@ -189,25 +208,33 @@ def _weather_group(stem: str, level_id: str) -> bool:
 
 
 def scan_game_data(game_dir: Path) -> dict:
-    venues, layouts = _scan_event_dirs(game_dir)
+    venues, layouts, default_modes, event_levels = _scan_event_dirs(game_dir)
     weathers = _scan_weathers(game_dir)
     ai_sets = _scan_ai_sets(game_dir)
 
-    # Authoritative level-id list: layout directories in art/levels.
-    level_ids: list[str] = []
+    mode_names = dict(GAME_MODES)
+
+    # Level-id list: layout dirs in art/levels, plus every level that ships an
+    # .evse event (the mode levels have no art dir but are part of the game's
+    # default rotation).
+    level_ids: set[str] = set()
     art_levels = game_dir / "data" / "art" / "levels"
     if art_levels.is_dir():
-        level_ids = sorted(
+        level_ids |= {
             d.name for d in art_levels.iterdir() if d.is_dir() and d.name.startswith("track")
-        )
+        }
+    level_ids |= event_levels
 
     tracks: list[dict] = []
-    for lid in level_ids:
+    for lid in sorted(level_ids):
         venue_key = lid.split("_")[0]
         venue = venues.get(venue_key, venue_key)
         layout = layouts.get(lid)
+        mode = default_modes.get(lid, "")
         if layout:
             display = f"{venue} – {layout}"
+        elif mode:
+            display = f"{venue} – {mode_names.get(mode, mode)}"
         else:
             display = venue if venue != venue_key else lid
         rev = lid.endswith("_rev")
@@ -218,6 +245,8 @@ def scan_game_data(game_dir: Path) -> dict:
                 "layout": layout or "",
                 "display": display,
                 "reverse": rev,
+                "has_event": lid in event_levels,
+                "default_mode": mode,
                 "weathers": [
                     w["id"]
                     for w in weathers

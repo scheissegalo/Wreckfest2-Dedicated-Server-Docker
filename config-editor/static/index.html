@@ -68,6 +68,8 @@
   <section id="tab-loop" class="tab">
     <div class="toolbar">
       <label>Editing <select id="loop-select"></select></label>
+      <button id="loop-generate">+ Generate loop</button>
+      <button id="loop-new">+ New loop</button>
       <button id="loop-add" class="primary">+ Add event</button>
       <button id="loop-save" class="primary">Save event loop</button>
       <span class="status" id="loop-status"></span>
@@ -113,6 +115,51 @@
     <textarea id="raw-text" spellcheck="false"></textarea>
   </section>
 </main>
+
+<dialog id="gen-dialog">
+  <h2>Generate event loop</h2>
+  <p class="hint">Creates a new <code>.becl</code> preset from the game's levels.
+    Existing files are backed up first.</p>
+
+  <label>File name <input id="gen-name" type="text" value="all_tracks" pattern="[A-Za-z0-9_\-]+">
+    <span class="hint">letters, digits, <code>_</code> and <code>-</code>; <code>.becl</code> added automatically</span>
+  </label>
+
+  <fieldset>
+    <legend>Levels to include</legend>
+    <label class="chkrow"><input type="radio" name="gen-scope" value="all" checked> All levels (<span id="gen-count-all">0</span>)</label>
+    <label class="chkrow"><input type="radio" name="gen-scope" value="race"> Race levels only (<span id="gen-count-race">0</span>)</label>
+    <label class="chkrow"><input type="radio" name="gen-scope" value="special"> Waypoint &amp; suicide levels only (<span id="gen-count-special">0</span>)</label>
+  </fieldset>
+
+  <fieldset>
+    <legend>Game mode</legend>
+    <label class="chkrow"><input type="checkbox" id="gen-intrinsic" checked> Use each level's native mode
+      <span class="hint">– race levels stay normal race, waypoint/suicide levels get their intended mode</span></label>
+    <div id="gen-modes" class="gen-modes"></div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Rules (applied to every event)</legend>
+    <div class="grid">
+      <label>Laps <input id="gen-laps" type="number" min="1" max="500" value="5"></label>
+      <label>Time limit (min) <input id="gen-time" type="number" min="1" max="1440" value="3"></label>
+      <label>Teams <input id="gen-teams" type="number" min="1" max="8" value="1"></label>
+      <label>Max participants <input id="gen-parts" type="number" min="1" max="24" value="24"></label>
+      <label>Bots <input id="gen-bots" type="number" min="0" max="24" value="8"></label>
+      <label>Car reset delay (s) <input id="gen-reset" type="number" min="0" max="20" value="2"></label>
+      <label>Vehicle damage <select id="gen-damage"></select></label>
+      <label>Weather <select id="gen-weather"></select></label>
+      <label>AI set <select id="gen-ai"></select></label>
+    </div>
+  </fieldset>
+
+  <div class="actions">
+    <button id="gen-create" class="primary">Create loop</button>
+    <button id="gen-cancel">Cancel</button>
+    <span class="status" id="gen-status"></span>
+  </div>
+</dialog>
 
 <template id="tpl-event">
   <div class="card event">
@@ -192,8 +239,7 @@
   </div>
 </template>
 
-<datalist id="loop-files"></datalist>
-<datalist id="car-types">
+<datalist id="loop-files"></datalist><datalist id="car-types">
   <option value="motorhome"><option value="school_bus">
   <option value="car01"><option value="car02"><option value="car03">
   <option value="car04"><option value="car05"><option value="car06">

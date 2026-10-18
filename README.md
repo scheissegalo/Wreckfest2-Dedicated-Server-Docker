@@ -35,6 +35,7 @@ Based on the [nvitaterna/wreckfest2-docker-server](https://hub.docker.com/r/nvit
    - `server_config.scnf`
    - `event_loop.becl`
    - `default_loop.becl`
+   - (optional) `server_privilege.sprv` — admins/moderators/bans; see [Full config reference & admin list](#full-config-reference--admin-list). Ready-made templates: `config/example_server_config.scnf` and `config/example_server_privilege.sprv`.
 4. Build and start:
    ```bash
    docker compose up -d --build
@@ -102,6 +103,53 @@ docker compose up -d --build config-editor
 
 Track, weather, and AI metadata is **scanned from the mounted game files at runtime** (`./wf2-server` is mounted read-only), so dropdowns stay current after game updates automatically.
 
+### Full config reference & admin list
+
+The game ships a packed (non-readable) `default_server_config.scnf`; to see every option with representative values, use the bundled **`config/example_server_config.scnf`**. It mirrors exactly the structure the game itself writes (same keys, same nesting) so you can copy values from it into your real `server_config.scnf`:
+
+| Key | Meaning |
+| --- | --- |
+| `net server config[0]` | `name`, `description`, `password`, `log file name`, `game port` |
+| `game server config[0]` | `cup list`, `event loop name`, `countdown time`, `voting time`, `flags` |
+| `...["auto ban report limits"][0]` | `censor/silence/suspend report limit` (reports before auto-ban) |
+| `...["server/admin/default ban durations"][0]` | `censor/silence/suspend duration` (minutes) |
+
+**Admins are not in `server_config.scnf`.** Wreckfest 2 stores per-player roles (admin/moderator/vip) and the ban list in a separate **`server_privilege.sprv`** file, which the game creates in the config dir the first time you assign a role (via the `role <SteamID64> <role>` console command, or by editing the file). See the bundled **`config/example_server_privilege.sprv`**:
+
+```json
+{
+    "bbmeta": "sprv v0 n1",
+    "roles": [
+        { "bbmeta": "ssrl v0 n2", "platform id": 76561197999725914, "role": "admin" },
+        { "platform id": 76561198000000001, "role": "moderator" }
+    ],
+    "bans": []
+}
+```
+
+- `platform id` is the player's **SteamID64**; known roles are `admin`, `moderator`, `vip`, and `default`.
+- Restart the server (`docker compose restart wreckfest-server`) after changing either file.
+- The example files are inert (`example_*`); the game only reads `server_config.scnf` and `server_privilege.sprv`.
+
+> **Ownership note:** the editor writes files as root but now preserves each file's existing owner/group, and `entry.sh` re-chowns the whole config dir on startup — so the game (running as `steam`) can keep saving its configs. If a previous edit left `server_config.scnf` root-owned and you saw `Server Error: Failed to save server config`, just restart the container.
+
+### Creating event-loop presets
+
+- **Generate a loop** — the Event Loop tab's **+ Generate…** button builds a new `.becl` from the game's levels over the HTTP API (`POST /api/generate-loop`). Pick all levels (45), race levels only (36), or the waypoint/suicide levels only (9); each level's **native game mode** is used by default (race levels stay normal race, the `_sr` levels run Suicide Race, and the `_1`/`_6` waypoint layouts run Waypoint Race), or force one or more modes onto every level. Rules (laps, time limit, teams, participants, bots, reset, damage) and weather/AI set are applied to every generated event. The shipped **`all_tracks.becl`** was produced exactly this way: all 45 levels, native modes, 5 laps, 3 min, 24 participants, 8 bots.
+- **"+ New loop"** creates an empty skeleton preset you fill in by hand.
+
+```bash
+# equivalent, from the command line (editor credentials via .env):
+curl -u admin:PASSWORD -X POST http://127.0.0.1:8085/api/generate-loop \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"all_tracks","modes":["intrinsic"],"laps":5,"time_limit":3,
+       "max_participants":24,"bot_count":8,"reset_delay":2}'
+```
+
+- Every `.becl` file is listed in both the Event Loop tab and the Server tab's active-loop picker.
+- An empty/0-byte file does **not** work — the editor writes a valid skeleton (`{"bbmeta": "becl v0 n1", "events": [...]}`).
+- Switch the active loop in the Server tab, then `docker compose restart wreckfest-server` (or restart from the console).
+
 ### Securing it
 
 By default the editor listens on `127.0.0.1:8085` only (not reachable from the network). To expose it, set environment variables (e.g. in a `.env` file next to `docker-compose.yml`):
@@ -121,21 +169,21 @@ Authentication is HTTP Basic: when you open the editor, the browser shows its na
 
 - Config changes only take effect after a server restart: `docker compose restart wreckfest-server`.
 - The editor validates structure before saving (required fields, ranges like bots 0–24, laps 1–500) and refuses invalid JSON — it won't corrupt your configs.
-- The game occasionally rewrites `server_config.scnf`/`server_cup_config.ccnl` at runtime; use the editor's Reload (Raw tab) or reload the page before editing to pick up game-side changes.
+- The game rewrites `server_config.scnf`/`server_cup_config.ccnl`/`server_privilege.sprv` at runtime; use the editor's Reload (Raw tab) or reload the page before editing to pick up game-side changes.
 
 ## Troubleshooting
 
 - **Container restarts in a loop / `gosu: command not found` or `Xvfb: command not found`:** the outdated upstream image is being used. Run `docker compose build` then `docker compose up -d --force-recreate`.
 - **Empty `docker compose logs` and no game output:** the server process never started — check the crash loop above, then inspect `logs/wine/stderr.log`.
 - **`Permission denied` writing to `/home/steam/logs/...` on a fresh VPS/clone:** Docker creates the bind-mounted `./logs` (and `./config`) directories as root; the hardened `entry.sh` fixes ownership automatically at startup, but if you see this error you're running an old image — rebuild with `docker compose up -d --build --force-recreate`.
-- **`Error: Can't open display` / `Failed creating new xdo instance` in a loop:** the virtual display (Xvfb) isn't running or the container predates the hardened entrypoint. Rebuild as above; `entry.sh` now starts Xvfb itself and only waits up to 60s for the game window instead of hanging forever.
+- **`Error: Can't open display` / `Failed creating new xdo instance` in a loop:** the virtual display (Xvfb) isn't running or the container predates the hardened entrypoint. Rebuild as above; `entry.sh` now starts Xvfb itself (clearing any stale `/tmp/.X99-lock` left by a previous run, which otherwise breaks `docker compose restart`) and only waits up to 60s for the game window instead of hanging forever.
 - **`Warning: Wreckfest window not found after 60s`:** Wine failed to start the game — check `logs/wine/stderr.log`. The server keeps going (console still starts) so the warning won't mask other issues.
 - **Server runs but players can't join:** forward UDP 30100 on your router (UPnP is unavailable inside the container) and check host firewall rules (`ufw allow 30100/udp`).
 
 ## Notes
 
 - Game files in `wf2-server/` and runtime logs are gitignored — the repo stays clean for upload/deployment.
-- Runtime-generated artifacts (`config/server_cup_config.ccnl`, `config/telemetry/`, `config/~Lock`, `config/save/`, `config/.backups/`) are also gitignored.
+- Runtime-generated artifacts (`config/server_cup_config.ccnl`, `config/server_privilege.sprv`, `config/telemetry/`, `config/~Lock`, `config/save/`, `config/.backups/`) are also gitignored (the `example_*` files are committed).
 - Check the [base image on Docker Hub](https://hub.docker.com/r/nvitaterna/wreckfest2-docker-server) for upstream updates.
 
 Enjoy racing! 🏎️

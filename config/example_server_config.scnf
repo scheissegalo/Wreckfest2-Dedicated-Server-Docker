@@ -1,0 +1,48 @@
+{
+    "net server config": [
+        {
+            "name": "My Wreckfest 2 Server",
+            "description": "Welcome to my server!",
+            "password": "",
+            "log file name": "",
+            "game port": 30100
+        }
+    ],
+    "game server config": [
+        {
+            "cup list": "",
+            "event loop name": "all_tracks",
+            "countdown time": 60000,
+            "voting time": 20000,
+            "flags": "leader enabled",
+            "auto ban report limits": [
+                {
+                    "censor report limit": 4,
+                    "silence report limit": 8,
+                    "suspend report limit": 12
+                }
+            ],
+            "server ban durations": [
+                {
+                    "censor duration": 1440,
+                    "silence duration": 1440,
+                    "suspend duration": 525600
+                }
+            ],
+            "admin ban durations": [
+                {
+                    "censor duration": 1440,
+                    "silence duration": 1440,
+                    "suspend duration": 525600
+                }
+            ],
+            "default ban durations": [
+                {
+                    "censor duration": 1440,
+                    "silence duration": 1440,
+                    "suspend duration": 525600
+                }
+            ]
+        }
+    ]
+}

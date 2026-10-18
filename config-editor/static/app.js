@@ -65,7 +65,8 @@ async function boot() {
   game = await api("/api/game-data");
   configs = await api("/api/configs");
 
-  const scnfCfg = configs.find((c) => c.name.endsWith(".scnf"));
+  const scnfCfg = configs.find((c) => c.name === "server_config.scnf")
+    || configs.find((c) => c.name.endsWith(".scnf"));
   if (!scnfCfg) throw new Error("server_config.scnf not found in config dir");
   scnfName = scnfCfg.name;
   scnf = (await api(`/api/config/${scnfCfg.name}`)).content;
@@ -238,19 +239,140 @@ $("#loop-select").addEventListener("change", async (e) => {
   await loadLoop(e.target.value);
 });
 
+/* Re-scan config dir and rebuild both loop dropdowns + the cup datalist.
+   Keeps the Server tab's current selection if the file still exists. */
+async function refreshLoopFiles() {
+  configs = await api("/api/configs");
+  const loopFiles = configs.filter((c) => c.name.endsWith(".becl")).map((c) => c.name);
+  $("#loop-files").innerHTML = loopFiles.map((f) => `<option value="${f.replace(/\.becl$/, "")}">`).join("");
+  const srvPrev = $("#srv-loop").value;
+  populateLoopSelect(loopFiles);
+  if (loopFiles.includes(srvPrev)) $("#srv-loop").value = srvPrev;
+  populateLoopSelect2(loopFiles);
+  return loopFiles;
+}
+
+$("#loop-new").addEventListener("click", async () => {
+  if (dirty && !confirm("Discard unsaved changes?")) return;
+  let name = prompt("New event loop file name (without .becl):", "");
+  if (name === null) return;
+  name = name.trim().replace(/\.becl$/i, "").replace(/[^A-Za-z0-9_-]/g, "");
+  if (!name) { status($("#loop-status"), "Invalid name — use letters, digits, _ and - only", true); return; }
+  const file = `${name}.becl`;
+  if (configs.some((c) => c.name === file)) { status($("#loop-status"), `${file} already exists`, true); return; }
+  try {
+    // Skeleton the game and the editor both accept; user adds events afterwards.
+    const skeleton = { bbmeta: "becl v0 n1", events: [defaultEvent()] };
+    await api(`/api/config/${file}`, { method: "PUT", body: JSON.stringify({ content: skeleton }) });
+    await refreshLoopFiles();
+    await loadLoop(file);
+    status($("#loop-status"), `Created ${file} ✓`);
+  } catch (e) {
+    status($("#loop-status"), e.message, true);
+  }
+});
+
 $("#loop-add").addEventListener("click", () => {
   loopData.events.push(defaultEvent());
   setDirty(true);
   renderEvents();
-});
-
-$("#loop-save").addEventListener("click", async () => {
+});$("#loop-save").addEventListener("click", async () => {
   try {
     await api(`/api/config/${loopName}`, { method: "PUT", body: JSON.stringify({ content: loopData }) });
     setDirty(false);
     status($("#loop-status"), "Saved ✓");
   } catch (e) {
     status($("#loop-status"), e.message, true);
+  }
+});
+
+/* ---------------- Generate loop dialog ---------------- */
+
+const genDialog = $("#gen-dialog");
+
+function genLevels(scope) {
+  const withEvents = game.tracks.filter((t) => t.has_event);
+  if (scope === "race") return withEvents.filter((t) => !t.default_mode);
+  if (scope === "special") return withEvents.filter((t) => t.default_mode);
+  return withEvents;
+}
+
+function fillGenSelect(sel, items, value) {
+  sel.innerHTML = "";
+  for (const it of items) {
+    const o = document.createElement("option");
+    o.value = it.id;
+    o.textContent = it.name;
+    sel.appendChild(o);
+  }
+  sel.value = value;
+}
+
+$("#loop-generate").addEventListener("click", () => {
+  if (dirty && !confirm("Discard unsaved changes?")) return;
+  const withEvents = game.tracks.filter((t) => t.has_event);
+  $("#gen-count-all").textContent = withEvents.length;
+  $("#gen-count-race").textContent = withEvents.filter((t) => !t.default_mode).length;
+  $("#gen-count-special").textContent = withEvents.filter((t) => t.default_mode).length;
+
+  fillGenSelect($("#gen-damage"), [{ id: "", name: "(game default)" }, ...game.vehicle_damage_ids.map((d) => ({ id: d.id, name: d.name }))], "");
+  fillGenSelect($("#gen-ai"), game.ai_sets.map((a) => ({ id: a.id, name: a.name })), "career/ai-class-all.aist");
+  fillGenSelect($("#gen-weather"), [{ id: "", name: "(game default)" }, ...game.weathers.map((w) => ({ id: w.id, name: `${w.name} (${w.stem})` }))], "");
+
+  const modesBox = $("#gen-modes");
+  modesBox.innerHTML = "";
+  for (const m of game.game_modes) {
+    if (!m.id) continue; // empty = native/default handled by the checkbox above
+    const row = document.createElement("label");
+    row.className = "chkrow";
+    row.innerHTML = `<input type="checkbox" value="${m.id}"> ${m.name}`;
+    modesBox.appendChild(row);
+  }
+  syncGenModes();
+
+  status($("#gen-status"), "");
+  genDialog.showModal();
+});
+
+function syncGenModes() {
+  const intrinsic = $("#gen-intrinsic").checked;
+  $$("#gen-modes input").forEach((i) => (i.disabled = intrinsic));
+  $("#gen-modes").style.opacity = intrinsic ? "0.5" : "1";
+}
+
+$("#gen-intrinsic").addEventListener("change", syncGenModes);
+$("#gen-cancel").addEventListener("click", () => $("#gen-dialog").close());
+$("#gen-create").addEventListener("click", async () => {
+  const scope = $('input[name="gen-scope"]:checked').value;
+  const levels = genLevels(scope).map((t) => t.id);
+  const intrinsic = $("#gen-intrinsic").checked;
+  const modes = intrinsic
+    ? ["intrinsic"]
+    : $$('#gen-modes input[type="checkbox"]:checked').map((i) => i.value);
+  if (!modes.length) return status($("#gen-status"), "Select at least one game mode", true);
+  const payload = {
+    name: $("#gen-name").value.trim(),
+    modes,
+    level_ids: levels,
+    weather: $("#gen-weather").value,
+    ai_set: $("#gen-ai").value,
+    laps: parseInt($("#gen-laps").value, 10) || 1,
+    time_limit: parseInt($("#gen-time").value, 10) || 1,
+    teams: parseInt($("#gen-teams").value, 10) || 1,
+    max_participants: parseInt($("#gen-parts").value, 10) || 1,
+    bot_count: parseInt($("#gen-bots").value, 10) || 0,
+    reset_delay: parseInt($("#gen-reset").value, 10) || 0,
+    damage: $("#gen-damage").value,
+    flags: "",
+  };
+  try {
+    const res = await api("/api/generate-loop", { method: "POST", body: JSON.stringify(payload) });
+    genDialog.close();
+    await refreshLoopFiles();
+    await loadLoop(res.name);
+    status($("#loop-status"), `Generated ${res.name} with ${res.events} events ✓`);
+  } catch (e) {
+    status($("#gen-status"), e.message, true);
   }
 });
 

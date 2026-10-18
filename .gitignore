@@ -10,6 +10,7 @@ logs/x/*
 
 # Runtime-generated config artifacts
 config/server_cup_config.ccnl
+config/server_privilege.sprv
 config/telemetry/
 config/~Lock
 config/save/
@@ -19,3 +20,7 @@ config/.backups/
 
 # Local secrets (editor credentials, bind overrides)
 .env
+
+# Python bytecode
+__pycache__/
+*.pyc

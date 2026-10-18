@@ -29,8 +29,8 @@ MAX_BACKUPS = int(os.environ.get("MAX_BACKUPS", "50"))
 EDITOR_USER = os.environ.get("EDITOR_USER", "")
 EDITOR_PASS = os.environ.get("EDITOR_PASS", "")
 
-ALLOWED_SUFFIXES = {".scnf", ".becl", ".ccnl"}
-FILENAME_RE = re.compile(r"^[A-Za-z0-9_\-]+\.(scnf|becl|ccnl)$")
+ALLOWED_SUFFIXES = {".scnf", ".becl", ".ccnl", ".sprv"}
+FILENAME_RE = re.compile(r"^[A-Za-z0-9_\-]+\.(scnf|becl|ccnl|sprv)$")
 
 app = FastAPI(title="Wreckfest 2 Config Editor")
 security = HTTPBasic(auto_error=False)
@@ -53,11 +53,11 @@ def auth_dep(creds: HTTPBasicCredentials | None = Depends(security)) -> None:
     _check_auth(creds)
 
 
-def _safe_path(name: str) -> Path:
+def _safe_path(name: str, must_exist: bool = True) -> Path:
     if not FILENAME_RE.match(name):
         raise HTTPException(status_code=400, detail="Invalid config file name")
     path = CONFIG_DIR / name
-    if not path.is_file():
+    if must_exist and not path.is_file():
         raise HTTPException(status_code=404, detail=f"{name} not found")
     return path
 
@@ -115,20 +115,39 @@ def get_config(name: str, _auth: None = Depends(auth_dep)):
     return {"name": name, "content": data}
 
 
-@app.put("/api/config/{name}")
-def put_config(name: str, payload: SavePayload, _auth: None = Depends(auth_dep)):
-    path = _safe_path(name)
-    # Validate structure per file type before touching disk.
-    err = _validate(name, payload.content)
-    if err:
-        raise HTTPException(status_code=422, detail=err)
-    _make_backup(path)
+def _write_config(path: Path, content: dict) -> None:
+    """Atomically write JSON config, backing up an existing file first.
+
+    This editor runs as root in its own container while the game runs as an
+    unprivileged ``steam`` user. If we left files root-owned the game could no
+    longer rewrite them ("Failed to save server config"), so after writing we
+    hand the file to the config directory's owner (``entry.sh`` chowns that dir
+    to ``steam``) and make it group-writable.
+    """
+    if path.is_file():
+        _make_backup(path)
     tmp = path.with_suffix(path.suffix + ".tmp")
     tmp.write_text(
-        json.dumps(payload.content, indent=4, ensure_ascii=False) + "\n",
+        json.dumps(content, indent=4, ensure_ascii=False) + "\n",
         encoding="utf-8",
     )
     tmp.replace(path)
+    try:
+        dir_stat = path.parent.stat()
+        os.chown(path, dir_stat.st_uid, dir_stat.st_gid)
+        os.chmod(path, 0o664)
+    except OSError:
+        pass  # best-effort: not fatal if ownership cannot be changed
+
+
+@app.put("/api/config/{name}")
+def put_config(name: str, payload: SavePayload, _auth: None = Depends(auth_dep)):
+    # must_exist=False so new event-loop files can be created; validation runs first.
+    path = _safe_path(name, must_exist=False)
+    err = _validate(name, payload.content)
+    if err:
+        raise HTTPException(status_code=422, detail=err)
+    _write_config(path, payload.content)
     return {"ok": True, "name": name}
 
 
@@ -221,7 +240,102 @@ def _validate(name: str, content: dict) -> str | None:
             if not isinstance(el, str):
                 return f"cups[{i}].event loop must be a string"
         return None
+    if name.endswith(".sprv"):
+        roles = content.get("roles", [])
+        if not isinstance(roles, list):
+            return "'roles' must be an array"
+        for i, role in enumerate(roles):
+            if not isinstance(role, dict):
+                return f"roles[{i}] must be an object"
+            pid = role.get("platform id")
+            if isinstance(pid, bool) or not isinstance(pid, (int, str)):
+                return f"roles[{i}].platform id must be a SteamID64 string or integer"
+            if not isinstance(role.get("role"), str) or not role["role"]:
+                return f"roles[{i}].role must be a non-empty string"
+        bans = content.get("bans", [])
+        if not isinstance(bans, list):
+            return "'bans' must be an array"
+        return None
     return None
+
+
+class GenerateLoopPayload(BaseModel):
+    name: str
+    # "intrinsic" -> one event per level using the level's own default mode;
+    # otherwise one event per (level, mode) for each listed mode id.
+    modes: list[str] = ["intrinsic"]
+    level_ids: list[str] | None = None  # None/empty -> every level with an event
+    weather: str = ""
+    ai_set: str = "career/ai-class-all.aist"
+    laps: int = 5
+    time_limit: int = 3
+    teams: int = 1
+    max_participants: int = 24
+    bot_count: int = 8
+    reset_delay: int = 2
+    damage: str = ""
+    flags: str = ""
+
+
+def _make_event(level_id: str, mode: str, p: GenerateLoopPayload) -> dict:
+    return {
+        "level": [
+            {
+                "level id": level_id,
+                "weather path": p.weather,
+                "ai set path": p.ai_set,
+                "game mode id": mode,
+            }
+        ],
+        "rules": [
+            {
+                "laps": p.laps,
+                "time limit": p.time_limit,
+                "number of teams": p.teams,
+                "max number of participants": p.max_participants,
+                "flags": p.flags,
+                "car reset delay (seconds)": p.reset_delay,
+                "vehicle damage id": p.damage,
+            }
+        ],
+        "bot count": p.bot_count,
+    }
+
+
+@app.post("/api/generate-loop")
+def generate_loop(payload: GenerateLoopPayload, _auth: None = Depends(auth_dep)):
+    name = payload.name.strip()
+    if not name.endswith(".becl"):
+        name += ".becl"
+    path = _safe_path(name, must_exist=False)
+
+    game = scan_game_data(GAME_DIR)
+    tracks = {t["id"]: t for t in game["tracks"]}
+    wanted = payload.level_ids or [
+        t["id"] for t in game["tracks"] if t.get("has_event")
+    ]
+    unknown = sorted({lid for lid in wanted if lid not in tracks})
+    if unknown:
+        raise HTTPException(status_code=400, detail=f"Unknown level id(s): {', '.join(unknown)}")
+
+    modes = [m.strip() for m in payload.modes if m.strip()]
+    if not modes:
+        modes = ["intrinsic"]
+
+    events: list[dict] = []
+    for lid in wanted:
+        if "intrinsic" in modes:
+            events.append(_make_event(lid, tracks[lid].get("default_mode", ""), payload))
+        else:
+            for mode in modes:
+                events.append(_make_event(lid, mode, payload))
+
+    content = {"bbmeta": "becl v0 n1", "events": events}
+    err = _validate(name, content)
+    if err:
+        raise HTTPException(status_code=422, detail=err)
+    _write_config(path, content)
+    return {"ok": True, "name": name, "events": len(events)}
 
 
 @app.get("/")

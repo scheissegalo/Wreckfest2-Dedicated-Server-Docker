@@ -24,11 +24,20 @@ echo "----------------"
 # Root phase: bind mounts may be root-owned on a fresh host; make them usable by steam.
 mkdir -p "$XLOGDIR" "$WINELOGDIR" "$WFLOGFILEDIR" "$STEAMAPPDIR" "$SERVERCONFIGDIR"
 chown -R steam:steam /home/steam/logs
-chown steam:steam "$STEAMAPPDIR" "$SERVERCONFIGDIR"
+chown steam:steam "$STEAMAPPDIR"
+# Recurse so configs written by the (root) config-editor become writable by the
+# game again; otherwise it logs "Failed to save server config".
+chown -R steam:steam "$SERVERCONFIGDIR"
 
 # Start the virtual display if it is not already reachable.
 if ! DISPLAY="$XVFB_DISPLAY" xdotool getdisplaygeometry >/dev/null 2>&1; then
     echo "Starting Xvfb on ${XVFB_DISPLAY}..."
+    # A previous container run can leave a stale lock/socket (the filesystem
+    # persists across `docker restart`); without cleaning them a fresh Xvfb
+    # refuses to start ("Server is already active for display N").
+    _dnum="${XVFB_DISPLAY#:}"
+    _dnum="${_dnum%%.*}"
+    rm -f "/tmp/.X${_dnum}-lock" "/tmp/.X11-unix/X${_dnum}"
     Xvfb "$XVFB_DISPLAY" -screen 0 1024x768x24 >> "$XLOGDIR/stdout.log" 2>> "$XLOGDIR/stderr.log" &
     for _i in $(seq 1 20); do
         DISPLAY="$XVFB_DISPLAY" xdotool getdisplaygeometry >/dev/null 2>&1 && break
