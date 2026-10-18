@@ -84,7 +84,7 @@ A small web GUI ships in this repo (`config-editor/` service) for editing the th
 
 ```bash
 docker compose up -d --build config-editor
-# then open http://127.0.0.1:8080
+# then open http://127.0.0.1:8085
 ```
 
 ### What it does
@@ -99,7 +99,7 @@ Track, weather, and AI metadata is **scanned from the mounted game files at runt
 
 ### Securing it
 
-By default the editor listens on `127.0.0.1:8080` only (not reachable from the network). To expose it, set environment variables (e.g. in a `.env` file next to `docker-compose.yml`):
+By default the editor listens on `127.0.0.1:8085` only (not reachable from the network). To expose it, set environment variables (e.g. in a `.env` file next to `docker-compose.yml`):
 
 ```bash
 EDITOR_BIND=0.0.0.0    # listen on all interfaces
@@ -120,6 +120,9 @@ MAX_BACKUPS=100        # optional, default 50
 
 - **Container restarts in a loop / `gosu: command not found` or `Xvfb: command not found`:** the outdated upstream image is being used. Run `docker compose build` then `docker compose up -d --force-recreate`.
 - **Empty `docker compose logs` and no game output:** the server process never started — check the crash loop above, then inspect `logs/wine/stderr.log`.
+- **`Permission denied` writing to `/home/steam/logs/...` on a fresh VPS/clone:** Docker creates the bind-mounted `./logs` (and `./config`) directories as root; the hardened `entry.sh` fixes ownership automatically at startup, but if you see this error you're running an old image — rebuild with `docker compose up -d --build --force-recreate`.
+- **`Error: Can't open display` / `Failed creating new xdo instance` in a loop:** the virtual display (Xvfb) isn't running or the container predates the hardened entrypoint. Rebuild as above; `entry.sh` now starts Xvfb itself and only waits up to 60s for the game window instead of hanging forever.
+- **`Warning: Wreckfest window not found after 60s`:** Wine failed to start the game — check `logs/wine/stderr.log`. The server keeps going (console still starts) so the warning won't mask other issues.
 - **Server runs but players can't join:** forward UDP 30100 on your router (UPnP is unavailable inside the container) and check host firewall rules (`ufw allow 30100/udp`).
 
 ## Notes

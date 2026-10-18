@@ -28,8 +28,8 @@ services:
     # Enable interactive mode for console access
     stdin_open: true
     tty: true
-    # Start Xvfb, then run entry.sh without stdin redirection (allows console input)
-    entrypoint: ["/bin/bash", "-c", "echo 'Starting Xvfb...' && Xvfb :99 -screen 0 1024x768x24 & sleep 2 && echo 'Xvfb started, running entry.sh' && gosu steam ./entry.sh"]
+    # entry.sh (root) fixes bind-mount ownership, starts Xvfb, then drops to steam via gosu
+    entrypoint: ["./entry.sh"]
 
   config-editor:
     build: ./config-editor
@@ -37,7 +37,7 @@ services:
     ports:
       # Bind to localhost by default; set EDITOR_BIND=0.0.0.0 to expose on the LAN
       # (also set EDITOR_USER/EDITOR_PASS if you expose it).
-      - "${EDITOR_BIND:-127.0.0.1}:8080:8080"
+      - "${EDITOR_BIND:-127.0.0.1}:8085:8080"
     volumes:
       - ./config:/config
       - ./wf2-server:/game:ro
