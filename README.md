@@ -110,6 +110,8 @@ MAX_BACKUPS=100        # optional, default 50
 
 **Always set `EDITOR_USER`/`EDITOR_PASS` if you change `EDITOR_BIND` away from localhost** — the editor can change your server password and configs.
 
+Authentication is HTTP Basic: when you open the editor, the browser shows its native login popup; enter the credentials from your `.env` once and it will remember them for the session. There is no custom login page. If you ever need to clear saved credentials, close all tabs to the editor or restart the browser.
+
 ### Notes
 
 - Config changes only take effect after a server restart: `docker compose restart wreckfest-server`.

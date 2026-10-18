@@ -239,4 +239,10 @@ def static(path: str):
 
 @app.exception_handler(HTTPException)
 async def http_exc(_req: Request, exc: HTTPException):
-    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+    # Preserve headers (notably WWW-Authenticate for Basic auth) so the
+    # browser shows its native login popup instead of raw JSON.
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail},
+        headers=exc.headers,
+    )
