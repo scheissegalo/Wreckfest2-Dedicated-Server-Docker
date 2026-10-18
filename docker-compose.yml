@@ -30,3 +30,19 @@ services:
     tty: true
     # Start Xvfb, then run entry.sh without stdin redirection (allows console input)
     entrypoint: ["/bin/bash", "-c", "echo 'Starting Xvfb...' && Xvfb :99 -screen 0 1024x768x24 & sleep 2 && echo 'Xvfb started, running entry.sh' && gosu steam ./entry.sh"]
+
+  config-editor:
+    build: ./config-editor
+    image: wreckfest2-config-editor:local
+    ports:
+      # Bind to localhost by default; set EDITOR_BIND=0.0.0.0 to expose on the LAN
+      # (also set EDITOR_USER/EDITOR_PASS if you expose it).
+      - "${EDITOR_BIND:-127.0.0.1}:8080:8080"
+    volumes:
+      - ./config:/config
+      - ./wf2-server:/game:ro
+    environment:
+      - EDITOR_USER=${EDITOR_USER:-}
+      - EDITOR_PASS=${EDITOR_PASS:-}
+      - MAX_BACKUPS=${MAX_BACKUPS:-50}
+    restart: unless-stopped

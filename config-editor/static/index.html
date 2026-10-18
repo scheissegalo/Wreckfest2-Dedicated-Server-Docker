@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wreckfest 2 Config Editor</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header>
+  <h1>Wreckfest 2 <span>Config Editor</span></h1>
+  <nav id="tabs">
+    <button data-tab="server" class="active">Server</button>
+    <button data-tab="loop">Event Loop</button>
+    <button data-tab="cups">Cups</button>
+    <button data-tab="backups">Backups</button>
+    <button data-tab="raw">Raw JSON</button>
+  </nav>
+  <div id="dirty-indicator" hidden>● unsaved changes</div>
+</header>
+
+<main>
+  <!-- ============ SERVER TAB ============ -->
+  <section id="tab-server" class="tab active">
+    <div class="card">
+      <h2>Server identity</h2>
+      <div class="grid">
+        <label>Name <input id="srv-name" type="text" maxlength="64"></label>
+        <label>Description <input id="srv-desc" type="text" maxlength="256"></label>
+        <label>Password <input id="srv-pass" type="text" autocomplete="off"></label>
+        <label>Game port <input id="srv-port" type="number" min="1" max="65535"></label>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Event rotation</h2>
+      <label>Active event loop
+        <select id="srv-loop"></select>
+      </label>
+      <p class="hint">The server loads this <code>.becl</code> file for its track rotation.
+        Edit it in the <a href="#" data-goto="loop">Event Loop</a> tab.
+        An empty <em>cup list</em> means the standalone rotation above always runs.</p>
+      <label>Cup list file <input id="srv-cuplist" type="text" placeholder="leave empty unless using a custom cup list"></label>
+    </div>
+    <div class="card">
+      <h2>Lobby</h2>
+      <div class="grid">
+        <label>Countdown time (ms) <input id="srv-countdown" type="number" min="30000" max="500000" step="1000">
+          <span class="hint">30 000 – 500 000</span></label>
+        <label>Voting time (ms) <input id="srv-voting" type="number" min="10000" max="30000" step="1000">
+          <span class="hint">10 000 – 30 000</span></label>
+      </div>
+      <fieldset id="srv-flags">
+        <legend>Server flags</legend>
+      </fieldset>
+    </div>
+    <div class="card">
+      <h2>Ban durations (minutes)</h2>
+      <div id="srv-bans"></div>
+      <p class="hint">Censor = chat mute, Silence = broader chat restriction, Suspend = cannot join.</p>
+    </div>
+    <div class="actions">
+      <button id="save-server" class="primary">Save server config</button>
+      <span class="status" id="server-status"></span>
+    </div>
+  </section>
+
+  <!-- ============ EVENT LOOP TAB ============ -->
+  <section id="tab-loop" class="tab">
+    <div class="toolbar">
+      <label>Editing <select id="loop-select"></select></label>
+      <button id="loop-add" class="primary">+ Add event</button>
+      <button id="loop-save" class="primary">Save event loop</button>
+      <span class="status" id="loop-status"></span>
+    </div>
+    <p class="hint" id="loop-hint"></p>
+    <div id="events"></div>
+  </section>
+
+  <!-- ============ CUPS TAB ============ -->
+  <section id="tab-cups" class="tab">
+    <div class="toolbar">
+      <button id="cups-add" class="primary">+ Add cup</button>
+      <button id="cups-save" class="primary">Save cup config</button>
+      <span class="status" id="cups-status"></span>
+    </div>
+    <p class="hint">Cups are what players vote between in the lobby (max 9).
+      Each cup points at an event-loop file. A cup's <em>event loop</em> can be a
+      local <code>.becl</code> filename (e.g. <code>my_loop</code>) or a game built-in
+      path like <code>data/property/settings/cup/derby_tracks.becl</code>.
+      Leave the server's cup list empty to always run the standalone rotation.</p>
+    <div id="cups"></div>
+  </section>
+
+  <!-- ============ BACKUPS TAB ============ -->
+  <section id="tab-backups" class="tab">
+    <div class="toolbar">
+      <button id="backups-refresh">Refresh</button>
+    </div>
+    <table id="backups-table">
+      <thead><tr><th>File</th><th>Size</th><th>Saved</th><th></th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <!-- ============ RAW TAB ============ -->
+  <section id="tab-raw" class="tab">
+    <div class="toolbar">
+      <label>File <select id="raw-select"></select></label>
+      <button id="raw-reload">Reload</button>
+      <button id="raw-save" class="primary">Validate &amp; save</button>
+      <span class="status" id="raw-status"></span>
+    </div>
+    <textarea id="raw-text" spellcheck="false"></textarea>
+  </section>
+</main>
+
+<template id="tpl-event">
+  <div class="card event">
+    <div class="event-head">
+      <span class="grip" title="Drag to reorder">⠿</span>
+      <strong class="event-title"></strong>
+      <span class="spacer"></span>
+      <button class="dup small">Duplicate</button>
+      <button class="del small danger">Remove</button>
+    </div>
+    <div class="grid">
+      <label>Track
+        <select class="ev-track"></select>
+      </label>
+      <label>Weather
+        <select class="ev-weather"></select>
+      </label>
+      <label>AI set
+        <select class="ev-ai"></select>
+      </label>
+      <label>Game mode
+        <select class="ev-mode"></select>
+      </label>
+    </div>
+    <div class="grid rules">
+      <label>Laps <input class="ev-laps" type="number" min="1" max="500"></label>
+      <label>Time limit (min) <input class="ev-time" type="number" min="1" max="1440"></label>
+      <label>Teams <input class="ev-teams" type="number" min="1" max="8"></label>
+      <label>Max participants <input class="ev-parts" type="number" min="1" max="24"></label>
+      <label>Bots <input class="ev-bots" type="number" min="0" max="24"></label>
+      <label>Car reset delay (s) <input class="ev-reset" type="number" min="0" max="20"></label>
+      <label>Vehicle damage
+        <select class="ev-damage"></select>
+      </label>
+    </div>
+    <fieldset class="ev-flags"><legend>Race flags</legend></fieldset>
+  </div>
+</template>
+
+<template id="tpl-cup">
+  <div class="card cup">
+    <div class="event-head">
+      <strong class="cup-title"></strong>
+      <span class="spacer"></span>
+      <button class="dup small">Duplicate</button>
+      <button class="del small danger">Remove</button>
+    </div>
+    <div class="grid">
+      <label>Cup name <input class="cup-name" type="text" maxlength="64"></label>
+      <label>Event loop <input class="cup-loop" type="text" list="loop-files"></label>
+      <label>Icon <input class="cup-icon" type="text"></label>
+    </div>
+    <label>Description <input class="cup-desc" type="text" maxlength="256"></label>
+    <div class="grid">
+      <label>Start order
+        <select class="cup-order"></select>
+      </label>
+      <label>Point distribution <input class="cup-points" type="text"></label>
+      <label>Best lap points <input class="cup-bestlap" type="number" min="0" max="100"></label>
+      <label> Highest score pts <input class="cup-highscore" type="number" min="0" max="100"></label>
+      <label>Last race multiplier <input class="cup-multiplier" type="number" min="0" max="10" step="0.1"></label>
+    </div>
+    <fieldset class="cup-flags"><legend>Cup flags</legend></fieldset>
+    <details>
+      <summary>Car restrictions (<span class="cr-count">0</span>)</summary>
+      <div class="cr-list"></div>
+      <button class="cr-add small">+ Add restriction</button>
+    </details>
+  </div>
+</template>
+
+<template id="tpl-cr">
+  <div class="cr-row grid">
+    <label>Allowed car type <input class="cr-type" type="text" list="car-types"></label>
+    <label>Flags <input class="cr-flags" type="text"></label>
+    <button class="cr-del small danger">✕</button>
+  </div>
+</template>
+
+<datalist id="loop-files"></datalist>
+<datalist id="car-types">
+  <option value="motorhome"><option value="school_bus">
+  <option value="car01"><option value="car02"><option value="car03">
+  <option value="car04"><option value="car05"><option value="car06">
+  <option value="car07"><option value="car08"><option value="car09">
+  <option value="car10"><option value="car11"><option value="car12">
+  <option value="car13"><option value="car14"><option value="car15">
+  <option value="car16"><option value="car17"><option value="car18">
+  <option value="car19"><option value="car20"><option value="car21">
+  <option value="car22"><option value="car23"><option value="car24">
+  <option value="car25"><option value="car26">
+</datalist>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

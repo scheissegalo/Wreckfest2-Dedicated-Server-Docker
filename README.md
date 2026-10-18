@@ -11,6 +11,7 @@ Based on the [nvitaterna/wreckfest2-docker-server](https://hub.docker.com/r/nvit
 - **Automatic updates** — every container start runs `steamcmd +app_update 3519390 validate`, which applies game updates and repairs missing/corrupted files.
 - **Persistent storage** — bind mounts for configs, logs, and game files survive container recreation.
 - **Interactive console** — attach to the running server to issue commands.
+- **Web config editor** — bundled GUI (`config-editor/` service) for editing `server_config.scnf`, event loops, and cup configs with dropdowns for all tracks, weathers, AI sets, and game modes (details below).
 - **Local image** — builds as `wreckfest2-docker-server:local`, distinct from the upstream image, so Compose can never silently fall back to an outdated pulled image (this previously caused a crash loop with `gosu: command not found` / `Xvfb: command not found`).
 
 ## Requirements
@@ -24,7 +25,7 @@ Based on the [nvitaterna/wreckfest2-docker-server](https://hub.docker.com/r/nvit
 
 1. Clone this repo and navigate to it:
    ```bash
-   git clone <this-repo> && cd <this-repo>
+   git clone https://github.com/scheissegalo/Wreckfest2-Dedicated-Server-Docker && cd Wreckfest2-Dedicated-Server-Docker
    ```
 2. Create the host directories (game files are **not** needed — SteamCMD fetches them):
    ```bash
@@ -77,6 +78,44 @@ Use **CTRL-C** to detach from the console. Only use `exit`/`quit` if you actuall
 
 Log files are gitignored; empty `.gitkeep` placeholders keep the directories in a fresh clone.
 
+## Web Config Editor
+
+A small web GUI ships in this repo (`config-editor/` service) for editing the three config files without hand-editing JSON. It runs alongside the game server and is bound to **localhost only** by default.
+
+```bash
+docker compose up -d --build config-editor
+# then open http://127.0.0.1:8080
+```
+
+### What it does
+
+- **Server tab** — edit server name, description, password, port, countdown/voting times, server flags, ban durations, and pick which `.becl` event loop is active (no more guessing whether `default_loop` or `event_loop` is loaded — the Event Loop tab also badges the active file).
+- **Event Loop tab** — edit any `.becl` file: add/remove/duplicate/reorder (drag) events; per-event dropdowns for **track** (pretty names like "Speedway – Inner Oval", extracted from the game files, with ID fallback), **weather** (filtered to the selected track's venue, pretty names), **AI set** (virtual class sets + on-disk sets like "American Cars"), and **game mode** (banger race, derby, deathmatch, folk race, suicide race, waypoint race). Rules fields (laps, time limit, participants, bots, damage, reset delay, race flags) are validated.
+- **Cups tab** — edit `server_cup_config.ccnl`: cups players vote between in the lobby, including scoring, start order, car restrictions, and which event loop each cup runs.
+- **Backups tab** — every save creates a timestamped backup under `config/.backups/` (last 50 kept per file); restore from the tab with one click.
+- **Raw JSON tab** — escape hatch to edit any config file as text with server-side validation.
+
+Track, weather, and AI metadata is **scanned from the mounted game files at runtime** (`./wf2-server` is mounted read-only), so dropdowns stay current after game updates automatically.
+
+### Securing it
+
+By default the editor listens on `127.0.0.1:8080` only (not reachable from the network). To expose it, set environment variables (e.g. in a `.env` file next to `docker-compose.yml`):
+
+```bash
+EDITOR_BIND=0.0.0.0    # listen on all interfaces
+EDITOR_USER=admin      # HTTP basic auth username
+EDITOR_PASS=changeme   # HTTP basic auth password
+MAX_BACKUPS=100        # optional, default 50
+```
+
+**Always set `EDITOR_USER`/`EDITOR_PASS` if you change `EDITOR_BIND` away from localhost** — the editor can change your server password and configs.
+
+### Notes
+
+- Config changes only take effect after a server restart: `docker compose restart wreckfest-server`.
+- The editor validates structure before saving (required fields, ranges like bots 0–24, laps 1–500) and refuses invalid JSON — it won't corrupt your configs.
+- The game occasionally rewrites `server_config.scnf`/`server_cup_config.ccnl` at runtime; use the editor's Reload (Raw tab) or reload the page before editing to pick up game-side changes.
+
 ## Troubleshooting
 
 - **Container restarts in a loop / `gosu: command not found` or `Xvfb: command not found`:** the outdated upstream image is being used. Run `docker compose build` then `docker compose up -d --force-recreate`.
@@ -86,7 +125,7 @@ Log files are gitignored; empty `.gitkeep` placeholders keep the directories in 
 ## Notes
 
 - Game files in `wf2-server/` and runtime logs are gitignored — the repo stays clean for upload/deployment.
-- Runtime-generated artifacts (`config/server_cup_config.ccnl`, `config/telemetry/`, `config/~Lock`, `config/save/`) are also gitignored.
+- Runtime-generated artifacts (`config/server_cup_config.ccnl`, `config/telemetry/`, `config/~Lock`, `config/save/`, `config/.backups/`) are also gitignored.
 - Check the [base image on Docker Hub](https://hub.docker.com/r/nvitaterna/wreckfest2-docker-server) for upstream updates.
 
 Enjoy racing! 🏎️

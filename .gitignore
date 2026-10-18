@@ -13,3 +13,6 @@ config/server_cup_config.ccnl
 config/telemetry/
 config/~Lock
 config/save/
+
+# Config-editor backups (created on every save)
+config/.backups/
