@@ -90,7 +90,12 @@ docker compose up -d --build config-editor
 ### What it does
 
 - **Server tab** — edit server name, description, password, port, countdown/voting times, server flags, ban durations, and pick which `.becl` event loop is active (no more guessing whether `default_loop` or `event_loop` is loaded — the Event Loop tab also badges the active file).
+
+  ![Server settings tab](images/ServerSettings.png)
+
 - **Event Loop tab** — edit any `.becl` file: add/remove/duplicate/reorder (drag) events; per-event dropdowns for **track** (pretty names like "Speedway – Inner Oval", extracted from the game files, with ID fallback), **weather** (filtered to the selected track's venue, pretty names), **AI set** (virtual class sets + on-disk sets like "American Cars"), and **game mode** (banger race, derby, deathmatch, folk race, suicide race, waypoint race). Rules fields (laps, time limit, participants, bots, damage, reset delay, race flags) are validated.
+
+  ![Event loop tab](images/EventLoop.png)
 - **Cups tab** — edit `server_cup_config.ccnl`: cups players vote between in the lobby, including scoring, start order, car restrictions, and which event loop each cup runs.
 - **Backups tab** — every save creates a timestamped backup under `config/.backups/` (last 50 kept per file); restore from the tab with one click.
 - **Raw JSON tab** — escape hatch to edit any config file as text with server-side validation.
