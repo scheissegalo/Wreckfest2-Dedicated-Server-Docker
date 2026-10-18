@@ -1,32 +1,48 @@
 {
-    "bbmeta": "scnf v0 n1",
     "net server config": [
         {
-            "bbmeta": "ncnf v2 n1",
             "name": "SERVERNAME",
             "description": "DESCRIPTION",
-            "password": "BLANKFORNOPASSWORD",
+            "password": "",
             "log file name": "",
             "game port": 30100
         }
     ],
     "game server config": [
         {
-            "bbmeta": "gcnf v3 n1",
-            "cup settings": [
-                {
-                    "bbmeta": "mros v1 n1",
-                    "point distribution": "30;27;25;20;19;18;17;16;15;14;13;12;11;10;9;8;7;6;5;4;3;2;1;0",
-                    "start order": "random",
-                    "points for best lap time": 0,
-                    "points for highest score": 0,
-                    "last race multiplier": 1,
-                    "number of races": 5
-                }
-            ],
+            "cup list": "",
             "event loop name": "event_loop",
             "countdown time": 60000,
-            "flags": "leader enabled"
+            "voting time": 20000,
+            "flags": "leader enabled",
+            "auto ban report limits": [
+                {
+                    "censor report limit": 4,
+                    "silence report limit": 8,
+                    "suspend report limit": 12
+                }
+            ],
+            "server ban durations": [
+                {
+                    "censor duration": 1440,
+                    "silence duration": 1440,
+                    "suspend duration": 525600
+                }
+            ],
+            "admin ban durations": [
+                {
+                    "censor duration": 1440,
+                    "silence duration": 1440,
+                    "suspend duration": 525600
+                }
+            ],
+            "default ban durations": [
+                {
+                    "censor duration": 1440,
+                    "silence duration": 1440,
+                    "suspend duration": 525600
+                }
+            ]
         }
     ]
 }

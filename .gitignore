@@ -1,0 +1,15 @@
+# Game files — downloaded automatically by steamcmd on first container start
+wf2-server/*
+!wf2-server/GAMEDATAGOESHERE.md
+
+# Runtime logs (written by container)
+logs/wf/*
+logs/wine/*
+logs/x/*
+!logs/**/.gitkeep
+
+# Runtime-generated config artifacts
+config/server_cup_config.ccnl
+config/telemetry/
+config/~Lock
+config/save/

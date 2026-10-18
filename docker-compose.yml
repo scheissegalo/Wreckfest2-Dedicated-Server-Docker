@@ -2,7 +2,10 @@
 services:
   wreckfest-server:
     build: .
-    image: nvitaterna/wreckfest2-docker-server:console  # Use the committed image with updates (e.g., apt upgrades and procps installed)
+    # Local tag distinct from the upstream image so `docker compose up` always uses our
+    # built image (with Xvfb/gosu) instead of silently pulling the outdated upstream one.
+    # Rebuild with `docker compose build` after changing the Dockerfile.
+    image: wreckfest2-docker-server:local
     ports:
       - "30100:30100/udp"
     volumes:
