@@ -4,11 +4,12 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY app.py gamedata.py ./
+COPY app.py gamedata.py status.py ./
 COPY static ./static
 
 ENV CONFIG_DIR=/config \
     GAME_DIR=/game \
+    SERVER_LOG=/logs/wf/server.log \
     PORT=8080
 
 EXPOSE 8080

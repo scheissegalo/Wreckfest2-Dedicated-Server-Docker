@@ -20,9 +20,11 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from pydantic import BaseModel
 
 from gamedata import scan_game_data
+from status import parse_server_log
 
 CONFIG_DIR = Path(os.environ.get("CONFIG_DIR", "/config"))
 GAME_DIR = Path(os.environ.get("GAME_DIR", "/game"))
+SERVER_LOG = Path(os.environ.get("SERVER_LOG", "/logs/wf/server.log"))
 BACKUP_DIR = CONFIG_DIR / ".backups"
 MAX_BACKUPS = int(os.environ.get("MAX_BACKUPS", "50"))
 
@@ -88,6 +90,25 @@ def game_data(_auth: None = Depends(auth_dep)):
     if not GAME_DIR.is_dir():
         raise HTTPException(status_code=409, detail=f"Game dir {GAME_DIR} not mounted")
     return scan_game_data(GAME_DIR)
+
+
+@app.get("/api/status")
+def server_status(_auth: None = Depends(auth_dep)):
+    """Live dashboard snapshot parsed from the game's server.log."""
+    if not SERVER_LOG.is_file():
+        return {"server": {"state": "no_log", "log": str(SERVER_LOG)}}
+    try:
+        text = SERVER_LOG.read_text(encoding="utf-8", errors="replace")
+        age = int(time.time() - SERVER_LOG.stat().st_mtime)
+    except OSError as e:
+        raise HTTPException(status_code=500, detail=f"Cannot read log: {e}")
+    snap = parse_server_log(text)
+    snap["server"]["age_s"] = age
+    # entry.sh heartbeats into the same file every ~120s while the game
+    # process lives; nothing writing for 5+ minutes means the game is gone.
+    if snap["server"]["state"] == "running" and age > 300:
+        snap["server"]["state"] = "stopped"
+    return snap
 
 
 @app.get("/api/configs")
@@ -241,12 +262,16 @@ def _validate(name: str, content: dict) -> str | None:
                 return f"cups[{i}].event loop must be a string"
         return None
     if name.endswith(".sprv"):
+        if content.get("bbmeta") != "sprv v0 n1":
+            return "'bbmeta' must be 'sprv v0 n1'"
         roles = content.get("roles", [])
         if not isinstance(roles, list):
             return "'roles' must be an array"
         for i, role in enumerate(roles):
             if not isinstance(role, dict):
                 return f"roles[{i}] must be an object"
+            if role.get("bbmeta") != "ssrl v0 n2":
+                return f"roles[{i}].bbmeta must be 'ssrl v0 n2' (the game refuses to boot without it)"
             pid = role.get("platform id")
             if isinstance(pid, bool) or not isinstance(pid, (int, str)):
                 return f"roles[{i}].platform id must be a SteamID64 string or integer"

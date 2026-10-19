@@ -49,6 +49,7 @@ $$("a[data-goto]").forEach((a) => {
 function showTab(name) {
   $$("#tabs button").forEach((b) => b.classList.toggle("active", b.dataset.tab === name));
   $$(".tab").forEach((t) => t.classList.toggle("active", t.id === `tab-${name}`));
+  if (name === "dashboard") startDash(); else stopDash();
   if (name === "backups") loadBackups();
   if (name === "raw") loadRaw();
   if (name === "loop" && loopData) renderEvents();
@@ -58,6 +59,99 @@ function showTab(name) {
 window.addEventListener("beforeunload", (e) => {
   if (dirty) { e.preventDefault(); e.returnValue = ""; }
 });
+
+/* ---------------- Dashboard ---------------- */
+
+let dashTimer = null;
+
+const DASH_BADGE = {
+  running:  ["ok",    "Online"],
+  starting: ["warn",  "Starting"],
+  stopped:  ["err",   "Stopped"],
+  no_log:   ["muted", "No log"],
+};
+const DASH_PHASE = {
+  racing: "Racing",
+  intermission: "Intermission",
+  starting: "Waiting for first race",
+};
+
+function escHtml(s) {
+  return String(s ?? "").replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  }[c]));
+}
+
+function ageStr(sec) {
+  if (sec == null) return "";
+  if (sec < 90) return `${sec}s ago`;
+  if (sec < 5400) return `${Math.round(sec / 60)} min ago`;
+  return `${(sec / 3600).toFixed(1)} h ago`;
+}
+
+function renderDash(s) {
+  const srv = s.server || {};
+  const badge = $("#dash-badge");
+  const [cls, label] = DASH_BADGE[srv.state] || ["muted", srv.state || "?"];
+  const phase = srv.state === "running" && srv.phase ? ` — ${DASH_PHASE[srv.phase] || srv.phase}` : "";
+  badge.textContent = label + phase;
+  badge.className = `badge ${cls}`;
+
+  const meta = [];
+  if (srv.state && srv.state !== "no_log") meta.push(`log updated ${ageStr(srv.age_s)}`);
+  if (srv.version) meta.push(`v${srv.version}`);
+  if (srv.client_errors) meta.push(`${srv.client_errors} client error(s)`);
+  $("#dash-meta").textContent = meta.join(" · ");
+
+  const race = s.race || {};
+  $("#dash-track").textContent = race.track || "—";
+  $("#dash-weather").textContent = race.weather || "";
+
+  const humans = s.humans || [];
+  $("#dash-humans").textContent = humans.length;
+  $("#dash-bots").textContent = s.bots ? s.bots.count : "—";
+  $("#dash-races").textContent = srv.races_finished ?? "—";
+  $("#dash-loop").textContent = srv.active_loop ? `loop: ${srv.active_loop}` : "";
+
+  const tbody = $("#dash-players-table tbody");
+  tbody.innerHTML = humans.map((h) => `
+    <tr>
+      <td>${escHtml(h.name)}</td>
+      <td class="mono">${escHtml(h.steam_id)}</td>
+      <td>${escHtml(h.car || "…")}</td>
+      <td>${escHtml(h.joined_at ? h.joined_at.slice(11) : "")}</td>
+    </tr>`).join("");
+  $("#dash-noplayers").hidden = humans.length > 0;
+
+  const events = (s.events || []).slice().reverse();
+  $("#dash-feed").textContent = events.length
+    ? events.map((e) => `${e.ts ? e.ts + "  " : ""}${e.text}`).join("\n")
+    : "waiting for game output…";
+}
+
+async function refreshDash() {
+  const badge = $("#dash-badge");
+  try {
+    renderDash(await api("/api/status"));
+  } catch (e) {
+    badge.textContent = `error: ${e.message}`;
+    badge.className = "badge err";
+  }
+}
+
+function startDash() {
+  if (dashTimer) return;
+  refreshDash();
+  dashTimer = setInterval(refreshDash, 5000);
+}
+
+function stopDash() {
+  clearInterval(dashTimer);
+  dashTimer = null;
+}
+
+$("#dash-refresh").addEventListener("click", refreshDash);
+startDash();
 
 /* ---------------- Boot ---------------- */
 

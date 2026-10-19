@@ -41,6 +41,7 @@ services:
     volumes:
       - ./config:/config
       - ./wf2-server:/game:ro
+      - ./logs:/logs:ro
     environment:
       - EDITOR_USER=${EDITOR_USER:-}
       - EDITOR_PASS=${EDITOR_PASS:-}

@@ -10,7 +10,8 @@
 <header>
   <h1>Wreckfest 2 <span>Config Editor</span></h1>
   <nav id="tabs">
-    <button data-tab="server" class="active">Server</button>
+    <button data-tab="dashboard" class="active">Dashboard</button>
+    <button data-tab="server">Server</button>
     <button data-tab="loop">Event Loop</button>
     <button data-tab="cups">Cups</button>
     <button data-tab="backups">Backups</button>
@@ -20,8 +21,52 @@
 </header>
 
 <main>
+  <!-- ============ DASHBOARD TAB ============ -->
+  <section id="tab-dashboard" class="tab active">
+    <div class="dash-head">
+      <span id="dash-badge" class="badge">connecting…</span>
+      <span class="hint" id="dash-meta"></span>
+      <span class="spacer"></span>
+      <button id="dash-refresh">Refresh</button>
+    </div>
+    <div class="grid dash-cards">
+      <div class="card">
+        <h2>Current track</h2>
+        <div class="big" id="dash-track">—</div>
+        <div class="hint" id="dash-weather"></div>
+      </div>
+      <div class="card">
+        <h2>Players online</h2>
+        <div class="big" id="dash-humans">—</div>
+        <div class="hint">humans in the session</div>
+      </div>
+      <div class="card">
+        <h2>Bots</h2>
+        <div class="big" id="dash-bots">—</div>
+        <div class="hint">loaded for the current race</div>
+      </div>
+      <div class="card">
+        <h2>Races finished</h2>
+        <div class="big" id="dash-races">—</div>
+        <div class="hint" id="dash-loop"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Players</h2>
+      <table id="dash-players-table">
+        <thead><tr><th>Name</th><th>SteamID64</th><th>Car</th><th>Joined</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <p class="hint" id="dash-noplayers" hidden>No human players online.</p>
+    </div>
+    <div class="card">
+      <h2>Live log</h2>
+      <pre id="dash-feed"></pre>
+    </div>
+  </section>
+
   <!-- ============ SERVER TAB ============ -->
-  <section id="tab-server" class="tab active">
+  <section id="tab-server" class="tab">
     <div class="card">
       <h2>Server identity</h2>
       <div class="grid">
