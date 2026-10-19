@@ -24,7 +24,11 @@ echo "----------------"
 # Root phase: bind mounts may be root-owned on a fresh host; make them usable by steam.
 mkdir -p "$XLOGDIR" "$WINELOGDIR" "$WFLOGFILEDIR" "$STEAMAPPDIR" "$SERVERCONFIGDIR"
 chown -R steam:steam /home/steam/logs
-chown steam:steam "$STEAMAPPDIR"
+# Recursive: the upstream image's entrypoint ran steamcmd as root, leaving the
+# whole game tree root-owned. steam (and steamcmd validate) then can't touch
+# those files -> steamcmd times out and the game hangs at
+# "Verifying game data checksum...". Costs ~seconds per boot.
+chown -R steam:steam "$STEAMAPPDIR"
 # Recurse so configs written by the (root) config-editor become writable by the
 # game again; otherwise it logs "Failed to save server config".
 chown -R steam:steam "$SERVERCONFIGDIR"
