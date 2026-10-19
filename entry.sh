@@ -67,6 +67,7 @@ echo "----------------"
 
 gosu steam bash -c "cd '$STEAMAPPDIR' && exec wine Wreckfest2.exe --server --save-dir='$SERVERCONFIGDIR'" \
     > "$WINELOGDIR/stdout.log" 2> "$WINELOGDIR/stderr.log" &
+GAMEPID=$!
 
 echo "----------------"
 echo "Wreckfest 2 Dedicated Server has been started in WINE"
@@ -101,6 +102,17 @@ fi
 echo "----------------"
 echo "Starting Console"
 echo "----------------"
+
+# Heartbeat: the upstream wrapper can freeze silently ("log blind"), leaving
+# server.log stale forever. This loop appends a timestamped line every ~2min so
+# the log's mtime is a second liveness signal for the wine/game process.
+# Self-terminates once the backgrounded wine process (GAMEPID) exits.
+(
+    while kill -0 "$GAMEPID" 2>/dev/null; do
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] heartbeat: game process $GAMEPID alive" >> "$WFLOGFILEDIR/server.log"
+        sleep 120
+    done
+) &
 
 sleep 2
 
