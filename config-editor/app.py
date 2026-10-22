@@ -291,7 +291,7 @@ class GenerateLoopPayload(BaseModel):
     modes: list[str] = ["intrinsic"]
     level_ids: list[str] | None = None  # None/empty -> every level with an event
     weather: str = ""
-    ai_set: str = "career/ai-class-all.aist"
+    ai_set: str = "data/property/career/ai_sets/racing.aist"
     laps: int = 5
     time_limit: int = 3
     teams: int = 1
@@ -346,6 +346,19 @@ def generate_loop(payload: GenerateLoopPayload, _auth: None = Depends(auth_dep))
     modes = [m.strip() for m in payload.modes if m.strip()]
     if not modes:
         modes = ["intrinsic"]
+
+    # A mode id the build no longer knows makes the game reject the whole loop
+    # and refuse to start; fail early instead of writing a dead config.
+    known_modes = {m["id"] for m in game["game_modes"]}
+    bad_modes = sorted({m for m in modes if m != "intrinsic" and m not in known_modes})
+    if bad_modes:
+        raise HTTPException(
+            status_code=400, detail=f"Unknown game mode id(s): {', '.join(bad_modes)}"
+        )
+
+    known_ai = {a["id"] for a in game["ai_sets"]}
+    if payload.ai_set and known_ai and payload.ai_set not in known_ai:
+        raise HTTPException(status_code=400, detail=f"Unknown AI set: {payload.ai_set}")
 
     events: list[dict] = []
     for lid in wanted:

@@ -16,19 +16,15 @@ from pathlib import Path
 _KEY_VENUE = b"ENVIRONMENT_TITLE"
 _KEY_LAYOUT = b"EVENT_TITLE"
 _KEY_WEATHER = b"WEATHER_NAME"
-_KEY_AISET = b"VEHICLE_AI_SET_NAME"
 
-# Virtual AI sets referenced by community configs; not present as files on disk.
-VIRTUAL_AI_SETS = [
-    ("career/ai-class-all.aist", "All classes"),
-    ("career/ai-class-a.aist", "Class A"),
-    ("career/ai-class-b.aist", "Class B"),
-    ("career/ai-class-c.aist", "Class C"),
-    ("career/ai-class-d.aist", "Class D"),
-]
+# Valid AI set ids for the current build (adapts to whichever layout ships);
+# only used to seed the dropdown when the game files are not on disk.
+FALLBACK_AI_SETS = ["data/property/career/ai_sets/racing.aist"]
 
+# Game mode ids referenced by shipped event loops. Modes with no exact match use
+# the empty string, which makes the game use the event's intrinsic mode.
 GAME_MODES = [
-    ("", "Game default"),
+    ("", "Event default"),
     ("bangerrace", "Banger Race (laps)"),
     ("derby", "Derby"),
     ("deathmatch", "Deathmatch"),
@@ -36,6 +32,10 @@ GAME_MODES = [
     ("suiciderace", "Suicide Race"),
     ("waypointrace", "Waypoint Race"),
 ]
+
+# Event loop that drives the level/AI-set scan when none is shipped as a plain
+# file (refuses to match obfuscated .qred data).
+_REF_LOOP = "default_event_rotation.becl"
 
 RULES_FLAGS = [
     "disable car resets",
@@ -168,28 +168,80 @@ def _scan_weathers(game_dir: Path) -> list[dict]:
     return out
 
 
+_REF_AI_RE = re.compile(rb"(data/property/career/ai_sets/[A-Za-z0-9_/]+\.aist)")
+_REF_PAREN_RE = re.compile(rb"[\x20-\x7e]{2,}")
+
+
 def _scan_ai_sets(game_dir: Path) -> list[dict]:
+    found: set[str] = set(_scan_ai_set_ids(game_dir))
+    for loop in _iter_reference_loops(game_dir):
+        found.update(
+            m.decode("ascii") for m in _REF_AI_RE.findall(loop.read_bytes())
+        )
+    if not found:
+        found.update(FALLBACK_AI_SETS)
     out: list[dict] = [
-        {"id": path, "name": name, "virtual": True} for path, name in VIRTUAL_AI_SETS
+        {"id": path, "name": _ai_set_name(path), "virtual": False}
+        for path in sorted(found)
     ]
-    root = game_dir / "data" / "property" / "career" / "ai_sets"
-    if root.is_dir():
-        for f in sorted(root.glob("*.aist")):
-            title = _extract_title(f.read_bytes(), _KEY_AISET) or f.stem
-            # Configs reference these as career/<name>.aist
-            out.append({"id": f"career/{f.stem}.aist", "name": title, "virtual": False})
-        singles = root / "singles"
-        if singles.is_dir():
-            for f in sorted(singles.glob("*.aist")):
-                title = _extract_title(f.read_bytes(), _KEY_AISET) or f.stem
-                out.append(
-                    {
-                        "id": f"career/singles/{f.stem}.aist",
-                        "name": f"{title} (single car)",
-                        "virtual": False,
-                    }
-                )
     return out
+
+
+def _scan_ai_set_ids(game_dir: Path) -> list[str]:
+    """Every AI set shipped on disk, id'd by its own path.
+
+    The racing sets (``racing``/``fwd``/``rwd``/``muscle``/…) and per-car
+    ``singles`` sets are valid but only some are referenced by the shipped
+    loops, so enumerate the files too. Ids use the ``data/property/career/``
+    prefix the game expects in configs.
+    """
+    out: list[str] = []
+    root = game_dir / "data" / "property" / "career" / "ai_sets"
+    if not root.is_dir():
+        return out
+    for f in sorted(root.glob("*.aist")):
+        out.append(f"data/property/career/ai_sets/{f.name}")
+    for sub in ("singles", "quickchallenge"):
+        subdir = root / sub
+        if subdir.is_dir():
+            for f in sorted(subdir.glob("*.aist")):
+                out.append(f"data/property/career/ai_sets/{sub}/{f.name}")
+    return out
+
+
+def _ai_set_name(path: str) -> str:
+    stem = path.rsplit(".", 1)[0].rsplit("/", 1)[-1]
+    return stem.replace("_", " ").strip().title()
+
+
+def _iter_reference_loops(game_dir: Path) -> list[Path]:
+    """Event-loop files to mine for valid ids (the one we build against)."""
+    settings = game_dir / "data" / "property" / "settings"
+    found: list[Path] = []
+    ref = settings / _REF_LOOP
+    if ref.is_file():
+        found.append(ref)
+    if settings.is_dir():
+        for f in sorted(settings.glob("*.becl")):
+            if f != ref:
+                found.append(f)
+    cup = settings / "cup"
+    if cup.is_dir():
+        found.extend(sorted(cup.glob("*.becl")))
+    return found
+
+
+def _reference_level_ids(game_dir: Path) -> list[str]:
+    """Level ids referenced by the shipped reference loop, in file order."""
+    ref = game_dir / "data" / "property" / "settings" / _REF_LOOP
+    if not ref.is_file():
+        return []
+    ids: list[str] = []
+    for m in _REF_PAREN_RE.finditer(ref.read_bytes()):
+        s = m.group().decode("latin-1")
+        if re.fullmatch(r"track\d+_\d+(?:_rev)?", s) and s not in ids:
+            ids.append(s)
+    return ids
 
 
 def _weather_group(stem: str, level_id: str) -> bool:
@@ -224,6 +276,7 @@ def scan_game_data(game_dir: Path) -> dict:
             d.name for d in art_levels.iterdir() if d.is_dir() and d.name.startswith("track")
         }
     level_ids |= event_levels
+    level_ids |= set(_reference_level_ids(game_dir))
 
     tracks: list[dict] = []
     for lid in sorted(level_ids):

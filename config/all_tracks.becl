@@ -6,7 +6,7 @@
                 {
                     "level id": "track01_1",
                     "weather path": "",
-                    "ai set path": "career/ai-class-all.aist",
+                    "ai set path": "data/property/career/ai_sets/racing.aist",
                     "game mode id": ""
                 }
             ],
@@ -28,7 +28,7 @@
                 {
                     "level id": "track01_1_rev",
                     "weather path": "",
-                    "ai set path": "career/ai-class-all.aist",
+                    "ai set path": "data/property/career/ai_sets/racing.aist",
                     "game mode id": ""
                 }
             ],
@@ -50,7 +50,7 @@
                 {
                     "level id": "track02_1",
                     "weather path": "",
-                    "ai set path": "career/ai-class-all.aist",
+                    "ai set path": "data/property/career/ai_sets/racing.aist",
                     "game mode id": ""
                 }
             ],
@@ -72,7 +72,7 @@
                 {
                     "level id": "track02_1_rev",
                     "weather path": "",
-                    "ai set path": "career/ai-class-all.aist",
+                    "ai set path": "data/property/career/ai_sets/racing.aist",
                     "game mode id": ""
                 }
             ],
@@ -94,7 +94,7 @@
                 {
                     "level id": "track02_2",
                     "weather path": "",
-                    "ai set path": "career/ai-class-all.aist",
+                    "ai set path": "data/property/career/ai_sets/racing.aist",
                     "game mode id": ""
                 }
             ],
@@ -116,7 +116,7 @@
                 {
                     "level id": "track02_2_rev",
                     "weather path": "",
-                    "ai set path": "career/ai-class-all.aist",
+                    "ai set path": "data/property/career/ai_sets/racing.aist",
                     "game mode id": ""
                 }
             ],
@@ -138,7 +138,7 @@
                 {
                     "level id": "track02_2_sr",
                     "weather path": "",
-                    "ai set path": "career/ai-class-all.aist",
+                    "ai set path": "data/property/career/ai_sets/racing.aist",
                     "game mode id": "suiciderace"
                 }
             ],
@@ -160,7 +160,7 @@
                 {
                     "level id": "track02_3",
                     "weather path": "",
-                    "ai set path": "career/ai-class-all.aist",
+                    "ai set path": "data/property/career/ai_sets/racing.aist",
                     "game mode id": "waypointrace"
                 }
             ],
@@ -182,7 +182,7 @@
                 {
                     "level id": "track04_1",
                     "weather path": "",
-                    "ai set path": "career/ai-class-all.aist",
+                    "ai set path": "data/property/career/ai_sets/racing.aist",
                     "game mode id": ""
                 }
             ],
@@ -204,7 +204,7 @@
                 {
                     "level id": "track04_1_rev",
                     "weather path": "",
-                    "ai set path": "career/ai-class-all.aist",
+                    "ai set path": "data/property/career/ai_sets/racing.aist",
                     "game mode id": ""
                 }
             ],
@@ -226,7 +226,7 @@
                 {
                     "level id": "track05_1",
                     "weather path": "",
-                    "ai set path": "career/ai-class-all.aist",
+                    "ai set path": "data/property/career/ai_sets/racing.aist",
                     "game mode id": ""
                 }
             ],
@@ -248,7 +248,7 @@
                 {
                     "level id": "track05_1_rev",
                     "weather path": "",
-                    "ai set path": "career/ai-class-all.aist",
+                    "ai set path": "data/property/career/ai_sets/racing.aist",
                     "game mode id": ""
                 }
             ],
@@ -270,7 +270,7 @@
                 {
                     "level id": "track06_1",
                     "weather path": "",
-                    "ai set path": "career/ai-class-all.aist",
+                    "ai set path": "data/property/career/ai_sets/racing.aist",
                     "game mode id": ""
                 }
             ],
@@ -292,7 +292,7 @@
                 {
                     "level id": "track06_2",
                     "weather path": "",
-                    "ai set path": "career/ai-class-all.aist",
+                    "ai set path": "data/property/career/ai_sets/racing.aist",
                     "game mode id": ""
                 }
             ],
@@ -314,7 +314,7 @@
                 {
                     "level id": "track06_3",
                     "weather path": "",
-                    "ai set path": "career/ai-class-all.aist",
+                    "ai set path": "data/property/career/ai_sets/racing.aist",
                     "game mode id": ""
                 }
             ],
@@ -336,7 +336,7 @@
                 {
                     "level id": "track06_4",
                     "weather path": "",
-                    "ai set path": "career/ai-class-all.aist",
+                    "ai set path": "data/property/career/ai_sets/racing.aist",
                     "game mode id": ""
                 }
             ],
@@ -358,7 +358,7 @@
                 {
                     "level id": "track06_5",
                     "weather path": "",
-                    "ai set path": "career/ai-class-all.aist",
+                    "ai set path": "data/property/career/ai_sets/racing.aist",
                     "game mode id": "suiciderace"
                 }
             ],
@@ -380,7 +380,7 @@
                 {
                     "level id": "track06_6",
                     "weather path": "",
-                    "ai set path": "career/ai-class-all.aist",
+                    "ai set path": "data/property/career/ai_sets/racing.aist",
                     "game mode id": "suiciderace"
                 }
             ],
@@ -402,7 +402,7 @@
                 {
                     "level id": "track07_1",
                     "weather path": "",
-                    "ai set path": "career/ai-class-all.aist",
+                    "ai set path": "data/property/career/ai_sets/racing.aist",
                     "game mode id": ""
                 }
             ],
@@ -424,7 +424,7 @@
                 {
                     "level id": "track07_1_rev",
                     "weather path": "",
-                    "ai set path": "career/ai-class-all.aist",
+                    "ai set path": "data/property/career/ai_sets/racing.aist",
                     "game mode id": ""
                 }
             ],
@@ -446,7 +446,7 @@
                 {
                     "level id": "track07_2",
                     "weather path": "",
-                    "ai set path": "career/ai-class-all.aist",
+                    "ai set path": "data/property/career/ai_sets/racing.aist",
                     "game mode id": ""
                 }
             ],
@@ -468,7 +468,7 @@
                 {
                     "level id": "track07_3",
                     "weather path": "",
-                    "ai set path": "career/ai-class-all.aist",
+                    "ai set path": "data/property/career/ai_sets/racing.aist",
                     "game mode id": ""
                 }
             ],
@@ -490,7 +490,7 @@
                 {
                     "level id": "track07_4",
                     "weather path": "",
-                    "ai set path": "career/ai-class-all.aist",
+                    "ai set path": "data/property/career/ai_sets/racing.aist",
                     "game mode id": ""
                 }
             ],
@@ -512,7 +512,7 @@
                 {
                     "level id": "track07_5",
                     "weather path": "",
-                    "ai set path": "career/ai-class-all.aist",
+                    "ai set path": "data/property/career/ai_sets/racing.aist",
                     "game mode id": ""
                 }
             ],
@@ -534,7 +534,7 @@
                 {
                     "level id": "track07_6",
                     "weather path": "",
-                    "ai set path": "career/ai-class-all.aist",
+                    "ai set path": "data/property/career/ai_sets/racing.aist",
                     "game mode id": "waypointrace"
                 }
             ],
@@ -556,7 +556,7 @@
                 {
                     "level id": "track08_1",
                     "weather path": "",
-                    "ai set path": "career/ai-class-all.aist",
+                    "ai set path": "data/property/career/ai_sets/racing.aist",
                     "game mode id": ""
                 }
             ],
@@ -578,7 +578,7 @@
                 {
                     "level id": "track09_1",
                     "weather path": "",
-                    "ai set path": "career/ai-class-all.aist",
+                    "ai set path": "data/property/career/ai_sets/racing.aist",
                     "game mode id": ""
                 }
             ],
@@ -600,7 +600,7 @@
                 {
                     "level id": "track09_2",
                     "weather path": "",
-                    "ai set path": "career/ai-class-all.aist",
+                    "ai set path": "data/property/career/ai_sets/racing.aist",
                     "game mode id": ""
                 }
             ],
@@ -622,7 +622,7 @@
                 {
                     "level id": "track09_3",
                     "weather path": "",
-                    "ai set path": "career/ai-class-all.aist",
+                    "ai set path": "data/property/career/ai_sets/racing.aist",
                     "game mode id": ""
                 }
             ],
@@ -644,7 +644,7 @@
                 {
                     "level id": "track09_4",
                     "weather path": "",
-                    "ai set path": "career/ai-class-all.aist",
+                    "ai set path": "data/property/career/ai_sets/racing.aist",
                     "game mode id": "suiciderace"
                 }
             ],
@@ -666,7 +666,7 @@
                 {
                     "level id": "track09_5",
                     "weather path": "",
-                    "ai set path": "career/ai-class-all.aist",
+                    "ai set path": "data/property/career/ai_sets/racing.aist",
                     "game mode id": "suiciderace"
                 }
             ],
@@ -688,7 +688,7 @@
                 {
                     "level id": "track10_1",
                     "weather path": "",
-                    "ai set path": "career/ai-class-all.aist",
+                    "ai set path": "data/property/career/ai_sets/racing.aist",
                     "game mode id": "waypointrace"
                 }
             ],
@@ -710,7 +710,7 @@
                 {
                     "level id": "track10_2",
                     "weather path": "",
-                    "ai set path": "career/ai-class-all.aist",
+                    "ai set path": "data/property/career/ai_sets/racing.aist",
                     "game mode id": ""
                 }
             ],
@@ -732,7 +732,7 @@
                 {
                     "level id": "track11_1",
                     "weather path": "",
-                    "ai set path": "career/ai-class-all.aist",
+                    "ai set path": "data/property/career/ai_sets/racing.aist",
                     "game mode id": ""
                 }
             ],
@@ -754,7 +754,7 @@
                 {
                     "level id": "track11_2",
                     "weather path": "",
-                    "ai set path": "career/ai-class-all.aist",
+                    "ai set path": "data/property/career/ai_sets/racing.aist",
                     "game mode id": ""
                 }
             ],
@@ -776,7 +776,7 @@
                 {
                     "level id": "track12_1",
                     "weather path": "",
-                    "ai set path": "career/ai-class-all.aist",
+                    "ai set path": "data/property/career/ai_sets/racing.aist",
                     "game mode id": ""
                 }
             ],
@@ -798,7 +798,7 @@
                 {
                     "level id": "track12_2",
                     "weather path": "",
-                    "ai set path": "career/ai-class-all.aist",
+                    "ai set path": "data/property/career/ai_sets/racing.aist",
                     "game mode id": ""
                 }
             ],
@@ -820,7 +820,7 @@
                 {
                     "level id": "track13_1",
                     "weather path": "",
-                    "ai set path": "career/ai-class-all.aist",
+                    "ai set path": "data/property/career/ai_sets/racing.aist",
                     "game mode id": ""
                 }
             ],
@@ -842,7 +842,7 @@
                 {
                     "level id": "track13_2",
                     "weather path": "",
-                    "ai set path": "career/ai-class-all.aist",
+                    "ai set path": "data/property/career/ai_sets/racing.aist",
                     "game mode id": ""
                 }
             ],
@@ -864,7 +864,7 @@
                 {
                     "level id": "track13_2_sr",
                     "weather path": "",
-                    "ai set path": "career/ai-class-all.aist",
+                    "ai set path": "data/property/career/ai_sets/racing.aist",
                     "game mode id": "suiciderace"
                 }
             ],
@@ -886,7 +886,7 @@
                 {
                     "level id": "track13_3",
                     "weather path": "",
-                    "ai set path": "career/ai-class-all.aist",
+                    "ai set path": "data/property/career/ai_sets/racing.aist",
                     "game mode id": ""
                 }
             ],
@@ -908,7 +908,7 @@
                 {
                     "level id": "track14_1",
                     "weather path": "",
-                    "ai set path": "career/ai-class-all.aist",
+                    "ai set path": "data/property/career/ai_sets/racing.aist",
                     "game mode id": ""
                 }
             ],
@@ -930,7 +930,7 @@
                 {
                     "level id": "track14_2",
                     "weather path": "",
-                    "ai set path": "career/ai-class-all.aist",
+                    "ai set path": "data/property/career/ai_sets/racing.aist",
                     "game mode id": ""
                 }
             ],
@@ -952,7 +952,7 @@
                 {
                     "level id": "track15_1",
                     "weather path": "",
-                    "ai set path": "career/ai-class-all.aist",
+                    "ai set path": "data/property/career/ai_sets/racing.aist",
                     "game mode id": ""
                 }
             ],
@@ -974,7 +974,73 @@
                 {
                     "level id": "track15_2",
                     "weather path": "",
-                    "ai set path": "career/ai-class-all.aist",
+                    "ai set path": "data/property/career/ai_sets/racing.aist",
+                    "game mode id": ""
+                }
+            ],
+            "rules": [
+                {
+                    "laps": 5,
+                    "time limit": 3,
+                    "number of teams": 1,
+                    "max number of participants": 24,
+                    "flags": "",
+                    "car reset delay (seconds)": 2,
+                    "vehicle damage id": ""
+                }
+            ],
+            "bot count": 8
+        },
+        {
+            "level": [
+                {
+                    "level id": "track15_1",
+                    "weather path": "",
+                    "ai set path": "data/property/career/ai_sets/racing.aist",
+                    "game mode id": ""
+                }
+            ],
+            "rules": [
+                {
+                    "laps": 5,
+                    "time limit": 3,
+                    "number of teams": 1,
+                    "max number of participants": 24,
+                    "flags": "",
+                    "car reset delay (seconds)": 2,
+                    "vehicle damage id": ""
+                }
+            ],
+            "bot count": 8
+        },
+        {
+            "level": [
+                {
+                    "level id": "track15_2",
+                    "weather path": "",
+                    "ai set path": "data/property/career/ai_sets/racing.aist",
+                    "game mode id": ""
+                }
+            ],
+            "rules": [
+                {
+                    "laps": 5,
+                    "time limit": 3,
+                    "number of teams": 1,
+                    "max number of participants": 24,
+                    "flags": "",
+                    "car reset delay (seconds)": 2,
+                    "vehicle damage id": ""
+                }
+            ],
+            "bot count": 8
+        },
+        {
+            "level": [
+                {
+                    "level id": "track15_1",
+                    "weather path": "",
+                    "ai set path": "data/property/career/ai_sets/racing.aist",
                     "game mode id": ""
                 }
             ],

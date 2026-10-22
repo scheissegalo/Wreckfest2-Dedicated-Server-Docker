@@ -410,7 +410,7 @@ $("#loop-generate").addEventListener("click", () => {
   $("#gen-count-special").textContent = withEvents.filter((t) => t.default_mode).length;
 
   fillGenSelect($("#gen-damage"), [{ id: "", name: "(game default)" }, ...game.vehicle_damage_ids.map((d) => ({ id: d.id, name: d.name }))], "");
-  fillGenSelect($("#gen-ai"), game.ai_sets.map((a) => ({ id: a.id, name: a.name })), "career/ai-class-all.aist");
+  fillGenSelect($("#gen-ai"), game.ai_sets.map((a) => ({ id: a.id, name: a.name })), "data/property/career/ai_sets/racing.aist");
   fillGenSelect($("#gen-weather"), [{ id: "", name: "(game default)" }, ...game.weathers.map((w) => ({ id: w.id, name: `${w.name} (${w.stem})` }))], "");
 
   const modesBox = $("#gen-modes");
@@ -472,7 +472,7 @@ $("#gen-create").addEventListener("click", async () => {
 
 function defaultEvent() {
   return {
-    level: [{ "level id": "track06_1", "weather path": "", "ai set path": "career/ai-class-all.aist", "game mode id": "" }],
+    level: [{ "level id": "track06_1", "weather path": "", "ai set path": "data/property/career/ai_sets/racing.aist", "game mode id": "" }],
     rules: [{ "laps": 5, "time limit": 3, "number of teams": 1, "max number of participants": 24, flags: "", "car reset delay (seconds)": 2, "vehicle damage id": "" }],
     "bot count": 8,
   };
@@ -525,7 +525,7 @@ function eventCard(ev, idx) {
     o.textContent = lv["ai set path"];
     aiSel.appendChild(o);
   }
-  aiSel.value = lv["ai set path"] || "career/ai-class-all.aist";
+  aiSel.value = lv["ai set path"] || "data/property/career/ai_sets/racing.aist";
 
   const modeSel = card.querySelector(".ev-mode");
   for (const m of game.game_modes) {
